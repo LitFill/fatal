@@ -1,38 +1,6 @@
-COMPILER := go
-BINNAME := fatal
-
-BUILDCMD := $(COMPILER) build
-OUTPUT := -o $(BINNAME)
-FLAGS := -v
-VERSION := 0.0.1
-
-RUNCMD := $(COMPILER) run
-
-.PHONY: all build run clean win release gh help doc
-
-all: build win ## Build the binary for Linux and Windows
-
-build: main.go ## Build the binary for Linux
-	@echo "Building $(BINNAME) for Linux"
-	@$(BUILDCMD) $(OUTPUT) $(FLAGS)
-
-win: main.go ## Build the binary for a niche gaming os (Windows)
-	@echo "Building $(BINNAME) for Windows"
-	@$(BUILDCMD) $(OUTPUT).exe $(FLAGS)
-
-run: main.go ## Run the main.go
-	@echo "Running $(BINNAME)"
-	@$(RUNCMD) $(FLAGS) .
-
-clean: ## Clean up
-	@echo "Cleaning up"
-	@rm -f $(BINNAME)*
-
-package: all ## Package the binary for release
-	@echo "Packaging $(BINNAME) for release"
-	@tar -czf "$(BINNAME)-$(VERSION).tar.gz" "$(BINNAME)" "$(BINNAME).exe"
-
-release: package doc ## Create a release on GitHub
+VERSION := 0.0.3
+.PHONY: release doc help
+release: doc ## Create a release on GitHub
 	@echo "Creating release $(VERSION) on GitHub"
 	@git tag -a v$(VERSION) -m "Version $(VERSION)"
 	@git push origin v$(VERSION)
