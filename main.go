@@ -3,27 +3,43 @@
 package fatal
 
 import (
-	"fmt"
+	"io"
 	"log/slog"
 	"os"
-
-	"github.com/OlegStotsky/go-monads/either"
+	"reflect"
 )
 
-type Reporter interface {
-	Report(msg string, log ...any)
+type Logger struct {
+	logger *slog.Logger
+	writer io.Writer
 }
 
-// the logger used by package level functions
-var logger = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
-	Level:     slog.LevelDebug,
-	AddSource: true,
-}))
+func (r Logger) Error(msg string, log ...any) { r.logger.Error(msg, log...) }
+func (r Logger) Debug(msg string, log ...any) { r.logger.Debug(msg, log...) }
+func (r Logger) Info(msg string, log ...any)  { r.logger.Info(msg, log...) }
 
-type reporter struct{ logger *slog.Logger }
+func (r *Logger) SetLevel(l slog.Level) {
+	r.logger = slog.New(slog.NewJSONHandler(r.writer, &slog.HandlerOptions{
+		Level: l, AddSource: true,
+	}))
+}
 
-func (r reporter) Report(msg string, log ...any) { r.logger.Error(msg, log...) }
-func newReporter(logger *slog.Logger) reporter   { return reporter{logger} }
+func NewLogger(w io.Writer, l slog.Level) Logger {
+	return Logger{
+		logger: slog.New(slog.NewJSONHandler(w, &slog.HandlerOptions{
+			Level:     l,
+			AddSource: true,
+		})),
+		writer: w,
+	}
+}
+
+var logger = NewLogger(os.Stdout, slog.LevelInfo)
+
+func SetLogger(logr Logger)        { logger = logr }
+func Error(msg string, log ...any) { logger.Error(msg, log...) }
+func Debug(msg string, log ...any) { logger.Debug(msg, log...) }
+func Info(msg string, log ...any)  { logger.Info(msg, log...) }
 
 // Log wraps function call returning error to log it using `log/slog` so it has `msg` and `log`.
 // example:
@@ -36,28 +52,122 @@ func Log(err error, msg string, log ...any) {
 	if err == nil {
 		return
 	}
-	logger.Error(err.Error())
-	logger.Error(msg, log...)
+	Error(err.Error())
+	Error(msg, log...)
 	os.Exit(1)
 }
 
-func LogV2(err error) Reporter {
-	if err == nil {
-		return nil
-	}
-	return newReporter(logger)
+// ErrorHandler represents a function that handles an error
+type ErrorHandler[T, E any] func(E) Result[T, E]
+
+// Result represents a result of an operation that can fail
+type Result[T, E any] interface {
+	Error() E
+	Value() T
+	Failure() bool
+	Success() bool
+	Map(func(T) any) Result[any, E]
+	FlatMap(func(T) Result[T, E]) Result[T, E]
+	Or(ErrorHandler[T, E]) Result[T, E]
 }
 
-type myResult[T any] struct {
-	Ok    T
-	Error error
+// success is the successful return of a failable operation
+type success[T, E any] struct {
+	val T
 }
 
-func NewResult[T any](ok T, error error) myResult[T] {
-	return myResult[T]{
-		Ok:    ok,
-		Error: error,
+// Error always returns nil for a success
+func (s success[T, E]) Error() E {
+	return *(new(E))
+}
+
+// Value returns the underlying value
+func (s success[T, E]) Value() T {
+	return s.val
+}
+
+// Failure always return false for a success
+func (s success[_, _]) Failure() bool {
+	return false
+}
+
+// Success always return true for a success
+func (s success[_, _]) Success() bool {
+	return true
+}
+
+// Map executes the callback functions and returns a result with the value changed to any type.
+func (s success[T, E]) Map(f func(T) any) Result[any, E] {
+	return Succeed[any, E](f(s.val))
+}
+
+// FlatMap executes the callback function and returns a success with the value changed to the result of the callback
+func (s success[T, E]) FlatMap(f func(T) Result[T, E]) Result[T, E] {
+	return f(s.val)
+}
+
+// Or returns the success
+func (s success[T, E]) Or(_ ErrorHandler[T, E]) Result[T, E] {
+	return s
+}
+
+// Succeed creates a success
+func Succeed[T, E any](val T) Result[T, E] {
+	return success[T, E]{val: val}
+}
+
+// failure represents an operation failure
+type failure[T, E any] struct {
+	err E
+}
+
+// Error returns the underlying error
+func (f failure[_, E]) Error() E {
+	return f.err
+}
+
+// Value returns the zero value of the type
+func (f failure[T, E]) Value() T {
+	return *new(T)
+}
+
+// Failure always returns true for a failure
+func (f failure[_, _]) Failure() bool {
+	return true
+}
+
+// Success always returns false for a failure
+func (f failure[_, _]) Success() bool {
+	return false
+}
+
+// Map returns the original failure in a Result[any] monad
+func (f failure[T, E]) Map(_ func(T) any) Result[any, E] {
+	return failure[any, E](f)
+}
+
+// FlatMap returns the original failure
+func (f failure[T, E]) FlatMap(_ func(T) Result[T, E]) Result[T, E] {
+	return f
+}
+
+// Or executes the callback on the error and returns a new failure with the result of the error - or the same failure if error returned is nil
+func (f failure[T, E]) Or(e ErrorHandler[T, E]) Result[T, E] {
+	return e(f.err)
+}
+
+// Fail creates a failure
+func Fail[T, E any](err E) Result[T, E] {
+	return failure[T, E]{err: err}
+}
+
+// FromTuple creates a Result object from a tupple value, error
+func FromTuple[T, E any](val T, err E) Result[T, E] {
+	v := reflect.ValueOf(err)
+	if v.IsValid() && !v.IsZero() {
+		return Fail[T](err)
 	}
+	return Succeed[T, E](val)
 }
 
 // Assign wraps function call returning a `val` and error to log it
@@ -72,82 +182,32 @@ func Assign[T any](val T, err error, msg string, log ...any) T {
 	if err == nil {
 		return val
 	}
-	logger.Error(err.Error())
-	logger.Error(msg, log...)
+	Error(err.Error())
+	Error(msg, log...)
 	return val
-}
-
-func AssignWithEither[T any](val either.Either[error, T], msg string, log ...any) T {
-	value, err := either.ToMaybe[error, T](val).Get()
-	if err == nil {
-		return value
-	}
-	logger.Error(err.Error())
-	logger.Error(msg, log...)
-	return value
-}
-
-func AssignWithResult[T any](result myResult[T], msg string, log ...any) T {
-	if result.Error == nil {
-		return result.Ok
-	}
-	logger.Error(result.Error.Error())
-	logger.Error(msg, log...)
-	return result.Ok
 }
 
 func AssignV2[T any](val T, err error, msg string, log ...any) T {
 	if err == nil {
 		return val
 	}
-	logger.Error(err.Error())
-	logger.Error(msg, log...)
+	Error(err.Error())
+	Error(msg, log...)
 	return val
 }
 
-func wrap[T any](val T, err error) T {
-	if err == nil {
-		return val
-	}
-	os.Exit(1)
-	return val
-}
-
-func myErr() error { return fmt.Errorf("my own error") }
-func getInt() (int, error) {
-	return 0, nil
-}
-
-type rrr[T any] interface {
+type ErrorResult[T any] interface {
 	Result[T, error]
 }
 
-func Errorable[T any](val T, err error) rrr[T] {
+func Errorable[T any](val T, err error) ErrorResult[T] {
 	return FromTuple(val, err)
 }
 
-func AssignR[T any](r rrr[T], msg string, log ...any) T {
+func AssignR[T any](r ErrorResult[T], msg string, log ...any) T {
 	if r.Failure() {
-		logger.Error(r.Error().Error())
-		logger.Error(msg, log...)
+		Error(r.Error().Error())
+		Error(msg, log...)
 	}
 	return r.Value()
-}
-
-func main() {
-	assign := AssignWithResult[int]
-	n := NewResult[int]
-
-	great := assign(n(getInt()), "msg", "k", 0)
-	fmt.Println(great)
-
-	AssignWithResult(NewResult(os.Create("log.json")), "Message", "file", "log.json")
-	AssignR(Errorable(os.Create("file")), "", "", 0)
-	LogV2(myErr()).Report("msg", "log", "logged")
-
-	m := AssignWithEither[int](either.FromErrorable(getInt()), "msg", "k", 0)
-	fmt.Println(great + m)
-
-	i := AssignR(Errorable(getInt()), "", "", 0)
-	fmt.Println(i)
 }
