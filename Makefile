@@ -4,7 +4,7 @@ BINNAME := fatal
 BUILDCMD := $(COMPILER) build
 OUTPUT := -o $(BINNAME)
 FLAGS := -v
-VERSION := 0.0.1
+VERSION := 0.0.2
 
 RUNCMD := $(COMPILER) run
 
@@ -32,7 +32,7 @@ package: all ## Package the binary for release
 	@echo "Packaging $(BINNAME) for release"
 	@tar -czf "$(BINNAME)-$(VERSION).tar.gz" "$(BINNAME)" "$(BINNAME).exe"
 
-release: package doc ## Create a release on GitHub
+release: doc ## Create a release on GitHub
 	@echo "Creating release $(VERSION) on GitHub"
 	@git tag -a v$(VERSION) -m "Version $(VERSION)"
 	@git push origin v$(VERSION)
