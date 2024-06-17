@@ -9,6 +9,7 @@ import (
 	"reflect"
 )
 
+// Logger logs for error reporting wraping `log/slog`.
 type Logger struct {
 	logger *slog.Logger
 	writer io.Writer
@@ -18,12 +19,14 @@ func (r Logger) Error(msg string, log ...any) { r.logger.Error(msg, log...) }
 func (r Logger) Debug(msg string, log ...any) { r.logger.Debug(msg, log...) }
 func (r Logger) Info(msg string, log ...any)  { r.logger.Info(msg, log...) }
 
+// SetLevel sets the r.logger level.
 func (r *Logger) SetLevel(l slog.Level) {
 	r.logger = slog.New(slog.NewJSONHandler(r.writer, &slog.HandlerOptions{
 		Level: l, AddSource: true,
 	}))
 }
 
+// NewLogger returns new Logger.
 func NewLogger(w io.Writer, l slog.Level) Logger {
 	return Logger{
 		logger: slog.New(slog.NewJSONHandler(w, &slog.HandlerOptions{
@@ -34,6 +37,7 @@ func NewLogger(w io.Writer, l slog.Level) Logger {
 	}
 }
 
+// local logger for package level functionality.
 var logger = NewLogger(os.Stdout, slog.LevelInfo)
 
 func SetLogger(logr Logger)        { logger = logr }
@@ -41,7 +45,7 @@ func Error(msg string, log ...any) { logger.Error(msg, log...) }
 func Debug(msg string, log ...any) { logger.Debug(msg, log...) }
 func Info(msg string, log ...any)  { logger.Info(msg, log...) }
 
-// Log wraps function call returning error to log it using `log/slog` so it has `msg` and `log`.
+// Log wraps function call returning error to log it using Logger.
 // example:
 //
 //	Log(http.ServeAndListen(port),
