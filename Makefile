@@ -4,7 +4,7 @@ release: doc ## Create a release on GitHub
 	@echo "Creating release $(VERSION) on GitHub"
 	@git tag -a v$(VERSION) -m "Version $(VERSION)"
 	@git push origin v$(VERSION)
-	@gh release create v$(VERSION) "$(BINNAME)-$(VERSION).tar.gz" --title "$(VERSION)" --notes "Release $(VERSION), view changelogs in CHANGELOG.md"
+	@gh release create v$(VERSION) --title "$(VERSION)" --generate-notes --notes-from-tag --notes "Release $(VERSION), view changelogs in CHANGELOG.md"
 
 doc: ## Create doc/scc.html
 	@echo "Creating scc documentation in html"
