@@ -1,4 +1,4 @@
-// fatal, LitFill <marrazzy54 at email dot com>
+// fatal, LitFill <marrazzy54 at gmail dot com>
 // library for fatal assignment or logging (error management)
 package fatal
 
