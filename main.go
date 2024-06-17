@@ -170,15 +170,15 @@ func FromTuple[T, E any](val T, err E) Result[T, E] {
 	return Succeed[T, E](val)
 }
 
-// Assign wraps function call returning a `val` and error to log it
-// if error != nil using `log/slog` so it has `msg` and `log`.
+// AssignLegacy wraps function call returning a `val` and error to log it
+// if error != nil using Logger.
 // example:
 //
-//	file := Assign(os.Create("log.txt"),
+//	file := AssignLegacy(os.Create("log.txt"),
 //	    "Can not create file",
 //	    "file", "log.txt"
 //	)
-func Assign[T any](val T, err error, msg string, log ...any) T {
+func AssignLegacy[T any](val T, err error, msg string, log ...any) T {
 	if err == nil {
 		return val
 	}
@@ -187,24 +187,25 @@ func Assign[T any](val T, err error, msg string, log ...any) T {
 	return val
 }
 
-func AssignV2[T any](val T, err error, msg string, log ...any) T {
-	if err == nil {
-		return val
-	}
-	Error(err.Error())
-	Error(msg, log...)
-	return val
-}
-
+// ErrorResult is interface that satisfies Restult[T, E any] but E is error.
 type ErrorResult[T any] interface {
 	Result[T, error]
 }
 
+// Errorable creates a ErrorResult object from a tupple (value, error).
 func Errorable[T any](val T, err error) ErrorResult[T] {
 	return FromTuple(val, err)
 }
 
-func AssignR[T any](r ErrorResult[T], msg string, log ...any) T {
+// Assign wraps function call returning a `val` and error via Errorable to log it
+// if error != nil using Logger.
+// example:
+//
+//	file := Assign(Errorable(os.Create("log.txt"),
+//	    "Can not create file",
+//	    "file", "log.txt"
+//	))
+func Assign[T any](r ErrorResult[T], msg string, log ...any) T {
 	if r.Failure() {
 		Error(r.Error().Error())
 		Error(msg, log...)
