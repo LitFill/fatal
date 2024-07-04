@@ -6,11 +6,11 @@ release: doc ## Create a release on GitHub
 	@git push origin v$(VERSION)
 	@gh release create v$(VERSION) --title "$(VERSION)" --generate-notes --notes "Release $(VERSION), view changelogs in CHANGELOG.md"
 
-doc: ## Create doc/scc.html
+doc: ## Create docs/scc.html
 	@echo "Creating scc documentation in html"
-	@mkdir -p "doc"
-	@touch "doc/scc.html"
-	@scc --overhead 1.0 --no-gen -n "scc.html" -s "complexity" -f "html" > doc/scc.html
+	@mkdir -p "docs"
+	@touch "docs/scc.html"
+	@scc --overhead 1.0 --no-gen -n "scc.html" -s "complexity" -f "html" > docs/scc.html
 
 help: ## Prints help for targets with comments
 	@echo "Available targets:"
