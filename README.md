@@ -19,3 +19,20 @@ file := Assign(os.Create(filename),
     "file name", filename,
 )
 ```
+
+## Usage notes
+
+> [!NOTE]
+> I don't know how to optimize this any further.
+
+how this typically used:
+
+```go
+func main() {
+  logFile := fatal.CreateLogFile("log.json")
+  defer logFile.Close()
+  logger := fatal.CreateLogger(io.MultiWriter(logFile, os.Stderr), slog.LevelInfo)
+}
+```
+
+and then use it like normal.
