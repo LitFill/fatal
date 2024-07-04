@@ -11,8 +11,11 @@ import (
 	"time"
 )
 
+// CreateLogFile creates a new log file with the specified filename and
+// returns a pointer to the opened file.
+// CreateLogFile uses Assign with default slog.Logger to do a proper assignment.
 func CreateLogFile(filename string) *os.File {
-	log_file := Assign(os.OpenFile(
+	return Assign(os.OpenFile(
 		filename,
 		os.O_CREATE|os.O_WRONLY|os.O_APPEND,
 		0666,
@@ -21,18 +24,18 @@ func CreateLogFile(filename string) *os.File {
 		"cannot create file",
 		"file name", filename,
 	)
-	return log_file
 }
 
+// CreateLogger creates a new logger object using the slog package and
+// configures it to write logs to the provided writer w.
+// The logger's logging level is also set based on the lev parameter.
 func CreateLogger(w io.Writer, lev slog.Level) *slog.Logger {
-	logger := slog.New(slog.NewJSONHandler(
-		io.MultiWriter(w, os.Stderr),
+	return slog.New(slog.NewJSONHandler(w,
 		&slog.HandlerOptions{
 			AddSource: true,
 			Level:     lev,
 		},
 	))
-	return logger
 }
 
 // Debug is a function that wraps slog.
