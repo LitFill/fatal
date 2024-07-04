@@ -1,18 +1,21 @@
 # fatal
 
 fatal by [LitFill](https://github.com/LitFill).
-library for fatal assignment or logging (error management)
+Library for fatal assignment or logging (error management).
+Using [log/slog package](https://pkg.go.dev/log/slog).
 
 ## Example
 
 ```go
 Log(http.ServeAndListen(port),
+    logger,
     "Can not serve and listen",
-    "port", port
+    "port", port,
 )
 
-file := Assign(os.Create("log.txt"),
+file := Assign(os.Create(filename),
+    logger,
     "Can not create file",
-    "file", "log.txt"
+    "file name", filename,
 )
 ```
