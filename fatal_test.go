@@ -3,9 +3,12 @@ package fatal
 import (
 	"errors"
 	"log/slog"
+	"os"
 	"reflect"
 	"testing"
 )
+
+var logger = CreateLogger(os.Stderr, slog.LevelDebug)
 
 func TestAssign(t *testing.T) {
 	type args[T any] struct {
@@ -41,7 +44,7 @@ func TestAssign(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := Assign(tt.args.val, tt.args.err)(tt.args.msg); !reflect.DeepEqual(got, tt.want) {
+			if got := Assign(tt.args.val, tt.args.err)(logger, tt.args.msg); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Assign()() = %d, want %d", got, tt.want)
 			}
 		})
@@ -77,7 +80,7 @@ func TestLog(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			Log(tt.args.err, tt.args.msg, tt.args.log...)
+			Log(tt.args.err, logger, tt.args.msg, tt.args.log...)
 		})
 	}
 }
@@ -88,18 +91,16 @@ func Test_logger_Info(t *testing.T) {
 	}
 	tests := []struct {
 		name string
-		l    *slog.Logger
 		args args
 	}{
 		{
 			name: "logger.Info",
-			l:    slog.New(slog.NewJSONHandler(myWriter, nil)),
 			args: args{"logger.Info(msg)"},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.l.Info(tt.args.msg)
+			logger.Info(tt.args.msg)
 		})
 	}
 }
@@ -119,7 +120,7 @@ func TestInfo(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			Info(tt.args.msg)
+			Info(logger, tt.args.msg)
 		})
 	}
 }
@@ -130,18 +131,16 @@ func Test_logger_Debug(t *testing.T) {
 	}
 	tests := []struct {
 		name string
-		l    *slog.Logger
 		args args
 	}{
 		{
 			name: "logger.Debug",
-			l:    slog.New(slog.NewJSONHandler(myWriter, nil)),
 			args: args{"logger.Debug(msg)"},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.l.Debug(tt.args.msg)
+			logger.Debug(tt.args.msg)
 		})
 	}
 }
@@ -161,7 +160,7 @@ func TestDebug(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			Debug(tt.args.msg)
+			Debug(logger, tt.args.msg)
 		})
 	}
 }
