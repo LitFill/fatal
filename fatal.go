@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"os"
 	"runtime"
+	"strings"
 	"time"
 )
 
@@ -76,14 +77,37 @@ func Error(logger *slog.Logger, msg string, args ...any) {
 	if !logger.Enabled(context.Background(), slog.LevelError) {
 		return
 	}
-	var pcs [1]uintptr
-	runtime.Callers(2, pcs[:]) // skip [Callers, Infof]
-	r := slog.NewRecord(time.Now(), slog.LevelError, msg, pcs[0])
+	pc := make([]uintptr, 10)
+	n := runtime.Callers(1, pc)
+	pc = pc[:n]
+	start, _ := filterPc(pc)
+	r := slog.NewRecord(time.Now(), slog.LevelError, msg, pc[start])
 	r.Add(args...)
 	err := logger.Handler().Handle(context.Background(), r)
 	if err != nil {
 		panic(err)
 	}
+}
+
+// filterPc filters the pc slice for frames that are not in this package
+func filterPc(pc []uintptr) (start, end int) {
+	if len(pc) == 0 {
+		return
+	}
+	frames := runtime.CallersFrames(pc)
+	indexes := make([]int, 0)
+	counter := 0
+	for {
+		frame, more := frames.Next()
+		if !more {
+			break
+		}
+		if !strings.Contains(frame.Function, "fatal") {
+			indexes = append(indexes, counter)
+		}
+		counter++
+	}
+	return indexes[0], indexes[len(indexes)-1]
 }
 
 // Log wraps function call returning error to log it using `log/slog` so it has `msg` and `log`.
