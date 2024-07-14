@@ -1,6 +1,6 @@
-VERSION := 0.1.8
-.PHONY: release doc help
-release: doc ## Create a release on GitHub
+VERSION := 0.1.9
+.PHONY: release doc changelog help
+release: doc changelog ## Create a release on GitHub
 	@echo "Creating release $(VERSION) on GitHub"
 	@git tag -a v$(VERSION) -m "Version $(VERSION)"
 	@git push origin v$(VERSION)
@@ -11,6 +11,10 @@ doc: ## Create docs/scc.html
 	@mkdir -p "docs"
 	@touch "docs/scc.html"
 	@scc --overhead 1.0 --no-gen -n "scc.html" -s "complexity" -f "html" > docs/scc.html
+
+changelog: ## Update CHANGELOG.md
+	@echo "Updating CHANGELOG.md"
+	@git-chglog --output CHANGELOG.md
 
 help: ## Prints help for targets with comments
 	@echo "Available targets:"
