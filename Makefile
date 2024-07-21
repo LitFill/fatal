@@ -1,4 +1,4 @@
-VERSION := 0.1.9
+VERSION := 0.2.0
 .PHONY: release doc changelog help
 release: doc changelog ## Create a release on GitHub
 	@echo "Creating release $(VERSION) on GitHub"
