@@ -1,4 +1,18 @@
 
+<a name="v0.2.0"></a>
+## [v0.2.0](https://github.com/LitFill/fatal/compare/v0.1.9...v0.2.0)
+
+> 2024-07-22
+
+### Docs
+
+* **changelog:** add CHANGELOG.md and update scc
+
+### Feat
+
+* **pc.frames:** also fix the filtering for Debug and Info
+
+
 <a name="v0.1.9"></a>
 ## [v0.1.9](https://github.com/LitFill/fatal/compare/v0.1.8...v0.1.9)
 
