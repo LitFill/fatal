@@ -1,4 +1,21 @@
 
+<a name="v0.2.1"></a>
+## [v0.2.1](https://github.com/LitFill/fatal/compare/v0.2.0...v0.2.1)
+
+> 2024-07-22
+
+### Chore
+
+* **Make:** bump version
+* **version:** bump version
+
+### Docs
+
+* **comments:** Improved comments for clarity, and use camelCase
+* **mail:** `email` => `gmail`
+* **scc:** update scc.html
+
+
 <a name="v0.2.0"></a>
 ## [v0.2.0](https://github.com/LitFill/fatal/compare/v0.1.9...v0.2.0)
 
