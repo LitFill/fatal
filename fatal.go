@@ -14,7 +14,7 @@ import (
 
 // CreateLogFile creates a new log file with the specified filename and
 // returns a pointer to the opened file.
-// CreateLogFile uses Assign with default slog.Logger to do a proper assignment.
+// It uses Assign with the default slog.Logger to handle the assignment.
 func CreateLogFile(filename string) *os.File {
 	return Assign(os.OpenFile(
 		filename,
@@ -28,8 +28,8 @@ func CreateLogFile(filename string) *os.File {
 }
 
 // CreateLogger creates a new logger object using the slog package and
-// configures it to write logs to the provided writer w.
-// The logger's logging level is also set based on the lev parameter.
+// configures it to write logs to the provided writer `w`
+// with the specified logging level `lev`.
 func CreateLogger(w io.Writer, lev slog.Level) *slog.Logger {
 	return slog.New(slog.NewJSONHandler(w,
 		&slog.HandlerOptions{
@@ -114,7 +114,7 @@ func filterPc(pc []uintptr) (start, end int) {
 	return indexes[0], indexes[len(indexes)-1]
 }
 
-// Log wraps function call returning error to log it using `log/slog` so it has `msg` and `log`.
+// Log logs the provided error with the specified message and logger, then exits the program.
 // example:
 //
 //	Log(http.ServeAndListen(port),
@@ -126,13 +126,14 @@ func Log(err error, logger *slog.Logger, msg string, args ...any) {
 	if err == nil {
 		return
 	}
-	local_logger := logger.With("err", err)
-	Error(local_logger, msg, args...)
+	localLogger := logger.With("err", err)
+	Error(localLogger, msg, args...)
 	os.Exit(1)
 }
 
-// Assign takes the return values of functions that return (val T, err error) and
-// returns a function that takes msg and logs in style of slog.logger and return the val T.
+// Assign handles the return values of functions that return (val T, err error)
+// and returns a function that logs the error and message using slog.Logger and
+// returns val T. example:
 //
 //	file := Assign(os.Create(fileName))(
 //		myLogger,
@@ -146,8 +147,8 @@ func Assign[T any](val T, err error) func(*slog.Logger, string, ...any) T {
 		}
 	}
 	return func(logger *slog.Logger, msg string, args ...any) T {
-		local_logger := logger.With("err", err)
-		Error(local_logger, msg, args...)
+		localLogger := logger.With("err", err)
+		Error(localLogger, msg, args...)
 		return val
 	}
 }
