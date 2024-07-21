@@ -39,56 +39,38 @@ func CreateLogger(w io.Writer, lev slog.Level) *slog.Logger {
 	))
 }
 
-// Debug is a function that wraps slog.
-// The log record contains the source position of the caller of Debug.
+// Debug logs an error message with the source position of the caller.
 func Debug(logger *slog.Logger, msg string, args ...any) {
-	if !logger.Enabled(context.Background(), slog.LevelDebug) {
-		return
-	}
-	pc := make([]uintptr, 10)
-	n := runtime.Callers(1, pc)
-	pc = pc[:n]
-	start, _ := filterPc(pc)
-	r := slog.NewRecord(time.Now(), slog.LevelDebug, msg, pc[start])
-	r.Add(args...)
-	err := logger.Handler().Handle(context.Background(), r)
-	if err != nil {
-		panic(err)
-	}
+	logMessage(context.Background(), logger, slog.LevelDebug, msg, args...)
 }
 
-// Info is a function that wraps slog.
-// The log record contains the source position of the caller of Info.
+// Info logs an error message with the source position of the caller.
 func Info(logger *slog.Logger, msg string, args ...any) {
-	if !logger.Enabled(context.Background(), slog.LevelInfo) {
-		return
-	}
-	pc := make([]uintptr, 10)
-	n := runtime.Callers(1, pc)
-	pc = pc[:n]
-	start, _ := filterPc(pc)
-	r := slog.NewRecord(time.Now(), slog.LevelInfo, msg, pc[start])
-	r.Add(args...)
-	err := logger.Handler().Handle(context.Background(), r)
-	if err != nil {
-		panic(err)
-	}
+	logMessage(context.Background(), logger, slog.LevelInfo, msg, args...)
 }
 
-// Error is a function that wraps slog.
-// The log record contains the source position of the caller of Error.
+// Error logs an error message with the source position of the caller.
 func Error(logger *slog.Logger, msg string, args ...any) {
-	if !logger.Enabled(context.Background(), slog.LevelError) {
+	logMessage(context.Background(), logger, slog.LevelError, msg, args...)
+}
+
+// logMessage is a helper function that logs a message with given level and
+// source position of the caller.
+func logMessage(
+	ctx context.Context,
+	logger *slog.Logger, level slog.Level,
+	msg string, args ...any,
+) {
+	if !logger.Enabled(ctx, level) {
 		return
 	}
 	pc := make([]uintptr, 10)
-	n := runtime.Callers(1, pc)
+	n := runtime.Callers(3, pc) // 3 is runtime.Callers(), logMessage(), and Error()/Info/Debug
 	pc = pc[:n]
 	start, _ := filterPc(pc)
-	r := slog.NewRecord(time.Now(), slog.LevelError, msg, pc[start])
+	r := slog.NewRecord(time.Now(), level, msg, pc[start])
 	r.Add(args...)
-	err := logger.Handler().Handle(context.Background(), r)
-	if err != nil {
+	if err := logger.Handler().Handle(ctx, r); err != nil {
 		panic(err)
 	}
 }
