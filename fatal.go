@@ -45,9 +45,11 @@ func Debug(logger *slog.Logger, msg string, args ...any) {
 	if !logger.Enabled(context.Background(), slog.LevelDebug) {
 		return
 	}
-	var pcs [1]uintptr
-	runtime.Callers(2, pcs[:]) // skip [Callers, Debugf]
-	r := slog.NewRecord(time.Now(), slog.LevelDebug, msg, pcs[0])
+	pc := make([]uintptr, 10)
+	n := runtime.Callers(1, pc)
+	pc = pc[:n]
+	start, _ := filterPc(pc)
+	r := slog.NewRecord(time.Now(), slog.LevelDebug, msg, pc[start])
 	r.Add(args...)
 	err := logger.Handler().Handle(context.Background(), r)
 	if err != nil {
@@ -61,9 +63,11 @@ func Info(logger *slog.Logger, msg string, args ...any) {
 	if !logger.Enabled(context.Background(), slog.LevelInfo) {
 		return
 	}
-	var pcs [1]uintptr
-	runtime.Callers(2, pcs[:]) // skip [Callers, Infof]
-	r := slog.NewRecord(time.Now(), slog.LevelInfo, msg, pcs[0])
+	pc := make([]uintptr, 10)
+	n := runtime.Callers(1, pc)
+	pc = pc[:n]
+	start, _ := filterPc(pc)
+	r := slog.NewRecord(time.Now(), slog.LevelInfo, msg, pc[start])
 	r.Add(args...)
 	err := logger.Handler().Handle(context.Background(), r)
 	if err != nil {
